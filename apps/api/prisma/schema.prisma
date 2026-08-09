@@ -12,3 +12,155 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+// ---------------------------------------------------------------------------
+// Curriculum domain (Journey data model, Phase 1 slice)
+// Content hierarchy: Track -> Stage -> Module -> Lesson
+// Problems are standalone and attached to Modules via ModuleProblem.
+// Skills are standalone and attached to Problems via ProblemSkill.
+// User progress tables are intentionally NOT part of this slice.
+// ---------------------------------------------------------------------------
+
+enum ModuleContentType {
+  LESSON
+  PROBLEM_SET
+  MIXED
+}
+
+enum CheckpointType {
+  QUIZ
+  PROJECT
+  MIXED_ASSESSMENT
+}
+
+model Track {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  orderIndex  Int      @map("order_index")
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  stages Stage[]
+
+  @@map("tracks")
+}
+
+model Stage {
+  id         String   @id @default(cuid())
+  trackId    String   @map("track_id")
+  orderIndex Int      @map("order_index")
+  title      String
+  unlockRule Json?    @map("unlock_rule")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  track       Track        @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  modules     Module[]
+  checkpoints Checkpoint[]
+
+  @@unique([trackId, orderIndex])
+  @@map("stages")
+}
+
+model Module {
+  id          String            @id @default(cuid())
+  stageId     String            @map("stage_id")
+  orderIndex  Int               @map("order_index")
+  title       String
+  contentType ModuleContentType @map("content_type")
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+
+  stage    Stage           @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  lessons  Lesson[]
+  problems ModuleProblem[]
+
+  @@unique([stageId, orderIndex])
+  @@map("modules")
+}
+
+model Lesson {
+  id         String   @id @default(cuid())
+  moduleId   String   @map("module_id")
+  orderIndex Int      @map("order_index")
+  title      String
+  contentRef String   @map("content_ref")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  module Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([moduleId, orderIndex])
+  @@map("lessons")
+}
+
+model Problem {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  description String
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  modules ModuleProblem[]
+  skills  ProblemSkill[]
+
+  @@map("problems")
+}
+
+model ModuleProblem {
+  moduleId   String   @map("module_id")
+  problemId  String   @map("problem_id")
+  orderIndex Int      @map("order_index")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  module  Module  @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@id([moduleId, problemId])
+  @@unique([moduleId, orderIndex])
+  @@map("module_problems")
+}
+
+model Checkpoint {
+  id             String         @id @default(cuid())
+  stageId        String         @map("stage_id")
+  checkpointType CheckpointType @map("checkpoint_type")
+  passThreshold  Float          @map("pass_threshold")
+  orderIndex     Int            @map("order_index")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  stage Stage @relation(fields: [stageId], references: [id], onDelete: Cascade)
+
+  @@unique([stageId, orderIndex])
+  @@map("checkpoints")
+}
+
+model Skill {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  problems ProblemSkill[]
+
+  @@map("skills")
+}
+
+model ProblemSkill {
+  problemId String   @map("problem_id")
+  skillId   String   @map("skill_id")
+  weight    Float
+  createdAt DateTime @default(now()) @map("created_at")
+
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  skill   Skill   @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@id([problemId, skillId])
+  @@map("problem_skills")
+}
