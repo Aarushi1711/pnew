@@ -10,5 +10,6 @@ import { UnlockService } from './unlock.service';
 @Module({
   controllers: [JourneyController, ProgressController, LevelsController],
   providers: [JourneyService, ProgressService, UnlockService, LevelsService],
+  exports: [UnlockService],
 })
 export class ProgressionModule {}
