@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Problem } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { StageUnlockRule } from './unlock-rule.types';
 
@@ -27,6 +28,32 @@ export class UnlockService {
     });
 
     return Math.min(MAX_STARS_PER_MODULE, solved.length);
+  }
+
+  /**
+   * Problems in a module's pool the user has not yet solved, ordered by
+   * position in the module. Unlike getModuleStars this is NOT capped at 3 —
+   * a module can have unsolved bonus problems even after hitting the star cap.
+   */
+  async getUnsolvedProblems(userId: string, moduleId: string): Promise<Problem[]> {
+    const moduleProblems = await this.prisma.moduleProblem.findMany({
+      where: { moduleId },
+      orderBy: { orderIndex: 'asc' },
+      include: { problem: true },
+    });
+    if (moduleProblems.length === 0) {
+      return [];
+    }
+
+    const problemIds = moduleProblems.map((mp) => mp.problemId);
+    const solved = await this.prisma.submission.findMany({
+      where: { userId, problemId: { in: problemIds }, verdict: ACCEPTED_VERDICT },
+      select: { problemId: true },
+      distinct: ['problemId'],
+    });
+    const solvedIds = new Set(solved.map((s) => s.problemId));
+
+    return moduleProblems.filter((mp) => !solvedIds.has(mp.problemId)).map((mp) => mp.problem);
   }
 
   /** A stage's stars = sum of its modules' stars. */

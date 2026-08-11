@@ -50,13 +50,24 @@ export class JourneyService {
             unlockRule: stage.unlockRule,
             locked: !(await this.unlockService.isStageUnlocked(userId, stage.unlockRule)),
             status: stageStatusById.get(stage.id) ?? ProgressStatus.NOT_STARTED,
-            modules: stage.modules.map((stageModule) => ({
-              id: stageModule.id,
-              orderIndex: stageModule.orderIndex,
-              title: stageModule.title,
-              contentType: stageModule.contentType,
-              status: moduleStatusById.get(stageModule.id) ?? ProgressStatus.NOT_STARTED,
-            })),
+            modules: await Promise.all(
+              stage.modules.map(async (stageModule) => {
+                const [starsEarned, unsolvedProblems] = await Promise.all([
+                  this.unlockService.getModuleStars(userId, stageModule.id),
+                  this.unlockService.getUnsolvedProblems(userId, stageModule.id),
+                ]);
+
+                return {
+                  id: stageModule.id,
+                  orderIndex: stageModule.orderIndex,
+                  title: stageModule.title,
+                  contentType: stageModule.contentType,
+                  status: moduleStatusById.get(stageModule.id) ?? ProgressStatus.NOT_STARTED,
+                  starsEarned,
+                  hasMorePractice: unsolvedProblems.length > 0,
+                };
+              }),
+            ),
           })),
         ),
       })),
