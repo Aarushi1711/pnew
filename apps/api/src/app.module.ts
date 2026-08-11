@@ -4,6 +4,9 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { HealthController } from './health/health.controller';
+import { AuthModule } from './auth/auth.module';
+import { SubmissionsModule } from './submissions/submissions.module';
+import { ProgressionModule } from './progression/progression.module';
 
 @Module({
   imports: [
@@ -11,6 +14,9 @@ import { HealthController } from './health/health.controller';
       isGlobal: true,
     }),
     PrismaModule,
+    AuthModule,
+    SubmissionsModule,
+    ProgressionModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService],

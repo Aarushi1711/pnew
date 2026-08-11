@@ -14,6 +14,28 @@ datasource db {
 }
 
 // ---------------------------------------------------------------------------
+// Identity domain (Phase 1 slice: email/password auth only)
+// No roles, profile fields, or session/refresh-token tables yet.
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  submissions        Submission[]
+  trackProgress      UserTrackProgress[]
+  stageProgress      UserStageProgress[]
+  moduleProgress     UserModuleProgress[]
+  checkpointAttempts UserCheckpointAttempt[]
+  skillMastery       UserSkillMastery[]
+
+  @@map("users")
+}
+
+// ---------------------------------------------------------------------------
 // Curriculum domain (Journey data model, Phase 1 slice)
 // Content hierarchy: Track -> Stage -> Module -> Lesson
 // Problems are standalone and attached to Modules via ModuleProblem.
@@ -42,7 +64,8 @@ model Track {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  stages Stage[]
+  stages       Stage[]
+  userProgress UserTrackProgress[]
 
   @@map("tracks")
 }
@@ -56,9 +79,10 @@ model Stage {
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
-  track       Track        @relation(fields: [trackId], references: [id], onDelete: Cascade)
-  modules     Module[]
-  checkpoints Checkpoint[]
+  track        Track               @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  modules      Module[]
+  checkpoints  Checkpoint[]
+  userProgress UserStageProgress[]
 
   @@unique([trackId, orderIndex])
   @@map("stages")
@@ -73,9 +97,10 @@ model Module {
   createdAt   DateTime          @default(now()) @map("created_at")
   updatedAt   DateTime          @updatedAt @map("updated_at")
 
-  stage    Stage           @relation(fields: [stageId], references: [id], onDelete: Cascade)
-  lessons  Lesson[]
-  problems ModuleProblem[]
+  stage        Stage                @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  lessons      Lesson[]
+  problems     ModuleProblem[]
+  userProgress UserModuleProgress[]
 
   @@unique([stageId, orderIndex])
   @@map("modules")
@@ -104,8 +129,9 @@ model Problem {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  modules ModuleProblem[]
-  skills  ProblemSkill[]
+  modules     ModuleProblem[]
+  skills      ProblemSkill[]
+  submissions Submission[]
 
   @@map("problems")
 }
@@ -133,7 +159,8 @@ model Checkpoint {
   createdAt      DateTime       @default(now()) @map("created_at")
   updatedAt      DateTime       @updatedAt @map("updated_at")
 
-  stage Stage @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  stage    Stage                   @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  attempts UserCheckpointAttempt[]
 
   @@unique([stageId, orderIndex])
   @@map("checkpoints")
@@ -148,6 +175,7 @@ model Skill {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   problems ProblemSkill[]
+  mastery  UserSkillMastery[]
 
   @@map("skills")
 }
@@ -163,4 +191,130 @@ model ProblemSkill {
 
   @@id([problemId, skillId])
   @@map("problem_skills")
+}
+
+// ---------------------------------------------------------------------------
+// Assessment domain — TEMPORARY MOCK GRADER
+// isMock/verdict/runtimeMs/memoryKb are populated by a fake in-process grader
+// (see src/submissions), not by real code execution. Replace with real Judge0
+// integration later; this model's shape is designed to survive that swap.
+// ---------------------------------------------------------------------------
+
+enum SubmissionStatus {
+  QUEUED
+  GRADED
+}
+
+model Submission {
+  id         String           @id @default(cuid())
+  userId     String           @map("user_id")
+  problemId  String           @map("problem_id")
+  language   String
+  sourceCode String           @map("source_code")
+  status     SubmissionStatus @default(QUEUED)
+  verdict    String?
+  runtimeMs  Int?             @map("runtime_ms")
+  memoryKb   Int?             @map("memory_kb")
+  isMock     Boolean          @default(true) @map("is_mock")
+  createdAt  DateTime         @default(now()) @map("created_at")
+  updatedAt  DateTime         @updatedAt @map("updated_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@map("submissions")
+}
+
+// ---------------------------------------------------------------------------
+// Learning Progression domain (Phase 1 slice)
+// A learner's "journey" is not a stored entity — it's computed by querying
+// across these per-node progress tables. UserTrackProgress/StageProgress/
+// ModuleProgress hold current state (upserted, status transitions in place).
+// UserCheckpointAttempt is an immutable append-only log, one row per attempt.
+// UserSkillMastery is a derived rollup (current state only), not a raw event
+// log — skill_assessments-style history is out of scope for this slice.
+// No unlock-rule evaluation or mastery calculation logic yet.
+// ---------------------------------------------------------------------------
+
+enum ProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  BLOCKED
+  MASTERED
+  REVISITING
+  COMPLETED
+}
+
+model UserTrackProgress {
+  id        String         @id @default(cuid())
+  userId    String         @map("user_id")
+  trackId   String         @map("track_id")
+  status    ProgressStatus @default(NOT_STARTED)
+  createdAt DateTime       @default(now()) @map("created_at")
+  updatedAt DateTime       @updatedAt @map("updated_at")
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  track Track @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, trackId])
+  @@map("user_track_progress")
+}
+
+model UserStageProgress {
+  id        String         @id @default(cuid())
+  userId    String         @map("user_id")
+  stageId   String         @map("stage_id")
+  status    ProgressStatus @default(NOT_STARTED)
+  createdAt DateTime       @default(now()) @map("created_at")
+  updatedAt DateTime       @updatedAt @map("updated_at")
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stage Stage @relation(fields: [stageId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, stageId])
+  @@map("user_stage_progress")
+}
+
+model UserModuleProgress {
+  id        String         @id @default(cuid())
+  userId    String         @map("user_id")
+  moduleId  String         @map("module_id")
+  status    ProgressStatus @default(NOT_STARTED)
+  createdAt DateTime       @default(now()) @map("created_at")
+  updatedAt DateTime       @updatedAt @map("updated_at")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  module Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, moduleId])
+  @@map("user_module_progress")
+}
+
+model UserCheckpointAttempt {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  checkpointId String   @map("checkpoint_id")
+  score        Float
+  passed       Boolean
+  attemptedAt  DateTime @default(now()) @map("attempted_at")
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  checkpoint Checkpoint @relation(fields: [checkpointId], references: [id], onDelete: Cascade)
+
+  @@map("user_checkpoint_attempts")
+}
+
+model UserSkillMastery {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  skillId      String   @map("skill_id")
+  masteryScore Float    @map("mastery_score")
+  sampleSize   Int      @map("sample_size")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skill Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, skillId])
+  @@map("user_skill_mastery")
 }

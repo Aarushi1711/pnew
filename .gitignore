@@ -5,6 +5,8 @@ build/
 .env
 .env.local
 
+infrastructure/judge0/judge0.conf
+
 .DS_Store
 Thumbs.db
 
