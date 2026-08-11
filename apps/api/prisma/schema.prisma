@@ -33,6 +33,7 @@ model User {
   checkpointAttempts UserCheckpointAttempt[]
   skillMastery       UserSkillMastery[]
   missionClaims      UserMissionClaim[]
+  hintRequests       HintRequest[]
 
   @@map("users")
 }
@@ -131,9 +132,10 @@ model Problem {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  modules     ModuleProblem[]
-  skills      ProblemSkill[]
-  submissions Submission[]
+  modules      ModuleProblem[]
+  skills       ProblemSkill[]
+  submissions  Submission[]
+  hintRequests HintRequest[]
 
   @@map("problems")
 }
@@ -356,4 +358,25 @@ model UserMissionClaim {
 
   @@unique([userId, missionId])
   @@map("user_mission_claims")
+}
+
+// ---------------------------------------------------------------------------
+// AI Coaching domain (Phase 1 slice: Hint Generator only)
+// Each hint is a permanent, immutable record — no update path. A level is
+// never regenerated once given; staleness/versioning is out of scope here.
+// ---------------------------------------------------------------------------
+
+model HintRequest {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  problemId String   @map("problem_id")
+  level     Int
+  hintText  String   @map("hint_text")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, problemId, level])
+  @@map("hint_requests")
 }

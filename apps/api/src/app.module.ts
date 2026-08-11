@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { SubmissionsModule } from './submissions/submissions.module';
 import { ProgressionModule } from './progression/progression.module';
 import { MissionsModule } from './missions/missions.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { MissionsModule } from './missions/missions.module';
     SubmissionsModule,
     ProgressionModule,
     MissionsModule,
+    AiModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService],
