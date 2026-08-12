@@ -7,6 +7,10 @@ build/
 
 infrastructure/judge0/judge0.conf
 
+# Ad-hoc local curl request bodies (e.g. curl -d @login.json) — these tend to
+# carry real or throwaway credentials and shouldn't be committed.
+login.json
+
 .DS_Store
 Thumbs.db
 

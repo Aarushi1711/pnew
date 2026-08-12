@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, Problem } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { GeminiService } from './gemini.service';
@@ -24,8 +24,11 @@ export class HintsService {
       throw new NotFoundException('Problem not found');
     }
 
-    const existingCount = await this.prisma.hintRequest.count({ where: { userId, problemId } });
-    const nextLevel = existingCount + 1;
+    const unlock = await this.prisma.userHintUnlock.findUnique({
+      where: { userId_problemId: { userId, problemId } },
+    });
+    const currentMaxLevel = unlock?.maxLevelUnlocked ?? 0;
+    const nextLevel = currentMaxLevel + 1;
 
     if (nextLevel > MAX_HINT_LEVEL) {
       return {
@@ -34,20 +37,15 @@ export class HintsService {
       };
     }
 
-    const hintText = await this.gemini.generateText(this.buildPrompt(problem, nextLevel));
+    const hint = await this.getOrGenerateHint(problem, nextLevel);
 
-    try {
-      await this.prisma.hintRequest.create({
-        data: { userId, problemId, level: nextLevel, hintText },
-      });
-    } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new ConflictException('This hint level was already generated for this problem.');
-      }
-      throw error;
-    }
+    await this.prisma.userHintUnlock.upsert({
+      where: { userId_problemId: { userId, problemId } },
+      create: { userId, problemId, maxLevelUnlocked: nextLevel },
+      update: { maxLevelUnlocked: nextLevel },
+    });
 
-    return { level: nextLevel, hintText };
+    return { level: hint.level, hintText: hint.hintText };
   }
 
   async listHints(userId: string, problemId: string) {
@@ -56,13 +54,48 @@ export class HintsService {
       throw new NotFoundException('Problem not found');
     }
 
-    const hints = await this.prisma.hintRequest.findMany({
-      where: { userId, problemId },
+    const unlock = await this.prisma.userHintUnlock.findUnique({
+      where: { userId_problemId: { userId, problemId } },
+    });
+    const maxLevel = unlock?.maxLevelUnlocked ?? 0;
+
+    if (maxLevel === 0) {
+      return { hints: [] };
+    }
+
+    const hints = await this.prisma.hint.findMany({
+      where: { problemId, level: { lte: maxLevel } },
       orderBy: { level: 'asc' },
-      select: { level: true, hintText: true, createdAt: true },
+      select: { level: true, hintText: true, generatedAt: true },
     });
 
     return { hints };
+  }
+
+  /** Global cache lookup by (problemId, level) — generates via Gemini only on a real cache miss. */
+  private async getOrGenerateHint(problem: Problem, level: number) {
+    const cached = await this.prisma.hint.findUnique({
+      where: { problemId_level: { problemId: problem.id, level } },
+    });
+    if (cached) {
+      return cached;
+    }
+
+    const hintText = await this.gemini.generateText(this.buildPrompt(problem, level));
+
+    try {
+      return await this.prisma.hint.create({
+        data: { problemId: problem.id, level, hintText },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        // Another request generated this (problem, level) hint concurrently — use its result.
+        return this.prisma.hint.findUniqueOrThrow({
+          where: { problemId_level: { problemId: problem.id, level } },
+        });
+      }
+      throw error;
+    }
   }
 
   private buildPrompt(problem: Problem, level: number): string {

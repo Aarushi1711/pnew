@@ -33,7 +33,7 @@ model User {
   checkpointAttempts UserCheckpointAttempt[]
   skillMastery       UserSkillMastery[]
   missionClaims      UserMissionClaim[]
-  hintRequests       HintRequest[]
+  hintUnlocks        UserHintUnlock[]
 
   @@map("users")
 }
@@ -132,10 +132,11 @@ model Problem {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  modules      ModuleProblem[]
-  skills       ProblemSkill[]
-  submissions  Submission[]
-  hintRequests HintRequest[]
+  modules     ModuleProblem[]
+  skills      ProblemSkill[]
+  submissions Submission[]
+  hints       Hint[]
+  hintUnlocks UserHintUnlock[]
 
   @@map("problems")
 }
@@ -362,21 +363,37 @@ model UserMissionClaim {
 
 // ---------------------------------------------------------------------------
 // AI Coaching domain (Phase 1 slice: Hint Generator only)
-// Each hint is a permanent, immutable record — no update path. A level is
-// never regenerated once given; staleness/versioning is out of scope here.
+// Hint text is shared, generated-content data (like Problem or Mission) —
+// keyed on (problem, level) only, never on the user, and generated at most
+// once per (problem, level) globally. UserHintUnlock is the only per-user
+// state: a single row per (user, problem) tracking how far they've unlocked,
+// upserted in place — not one row per level.
 // ---------------------------------------------------------------------------
 
-model HintRequest {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  problemId String   @map("problem_id")
-  level     Int
-  hintText  String   @map("hint_text")
-  createdAt DateTime @default(now()) @map("created_at")
+model Hint {
+  id          String   @id @default(cuid())
+  problemId   String   @map("problem_id")
+  level       Int
+  hintText    String   @map("hint_text")
+  generatedAt DateTime @default(now()) @map("generated_at")
+
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@unique([problemId, level])
+  @@map("hints")
+}
+
+model UserHintUnlock {
+  id               String   @id @default(cuid())
+  userId           String   @map("user_id")
+  problemId        String   @map("problem_id")
+  maxLevelUnlocked Int      @default(0) @map("max_level_unlocked")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, problemId, level])
-  @@map("hint_requests")
+  @@unique([userId, problemId])
+  @@map("user_hint_unlocks")
 }

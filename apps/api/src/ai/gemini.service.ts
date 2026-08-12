@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenAI } from '@google/genai';
 
@@ -9,6 +9,7 @@ const GEMINI_MODEL = 'gemini-flash-latest';
 
 @Injectable()
 export class GeminiService {
+  private readonly logger = new Logger(GeminiService.name);
   private readonly client: GoogleGenAI;
 
   constructor(config: ConfigService) {
@@ -16,6 +17,8 @@ export class GeminiService {
   }
 
   async generateText(prompt: string): Promise<string> {
+    this.logger.log(`Calling Gemini API (model=${GEMINI_MODEL})`);
+
     const response = await this.client.models.generateContent({
       model: GEMINI_MODEL,
       contents: prompt,
