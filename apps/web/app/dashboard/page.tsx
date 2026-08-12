@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../auth-context';
-import { API_BASE_URL } from '../api-config';
+import { API_BASE_URL } from '../../lib/api';
 
 interface ModuleNode {
   id: string;

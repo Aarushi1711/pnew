@@ -7,8 +7,9 @@ build/
 
 infrastructure/judge0/judge0.conf
 
-# Ad-hoc local curl request bodies (e.g. curl -d @login.json) — these tend to
-# carry real or throwaway credentials and shouldn't be committed.
+# Throwaway local test fixtures (e.g. curl -d @.scratch/login.json bodies) —
+# these tend to carry real or throwaway credentials and shouldn't be committed.
+.scratch/
 login.json
 
 .DS_Store
