@@ -44,8 +44,7 @@
   inset: 0;
   width: 100%;
   height: 100%;
-  transform-origin: bottom center;
-  animation: sway-treeline 6s ease-in-out infinite;
+  animation: drift-treeline 6s ease-in-out infinite;
 }
 
 .tree {
@@ -63,21 +62,40 @@
   height: 100%;
 }
 
+/* Only the bottom slice of grass-layer.png's art is shown — the full image
+   is a tall band that, once its transparency gap was fixed, became opaque
+   all the way up through the table-character layer's vertical position and
+   fully hid it. Clipping to the bottom ~15% keeps grass acting as a foreground
+   fringe near the ground line instead of a tall wall covering the mid-ground. */
 .grass {
   inset: 0;
   width: 100%;
   height: 100%;
-  transform-origin: bottom center;
-  animation: sway-grass 3s ease-in-out infinite;
+  clip-path: inset(85% 0 0 0);
+  animation: drift-grass 4s ease-in-out infinite;
 }
 
-@keyframes sway-treeline {
+/* Full-viewport-width strips: rotating them around one pivot amplifies into a
+   large lateral swing at the far edges (mechanical "shake"), so these sway via
+   a small horizontal drift instead. The single foreground tree is a compact,
+   narrow object, so rotation reads correctly there and is left as-is. */
+@keyframes drift-treeline {
   0%,
   100% {
-    transform: rotate(-0.5deg);
+    transform: translateX(-2px);
   }
   50% {
-    transform: rotate(0.5deg);
+    transform: translateX(2px);
+  }
+}
+
+@keyframes drift-grass {
+  0%,
+  100% {
+    transform: translateX(-3px);
+  }
+  50% {
+    transform: translateX(3px);
   }
 }
 
@@ -88,16 +106,6 @@
   }
   50% {
     transform: rotate(1deg);
-  }
-}
-
-@keyframes sway-grass {
-  0%,
-  100% {
-    transform: rotate(-1.5deg);
-  }
-  50% {
-    transform: rotate(1.5deg);
   }
 }
 
