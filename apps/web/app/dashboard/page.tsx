@@ -47,7 +47,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!accessToken) {
-      router.push('/');
+      router.push('/login');
       return;
     }
 
@@ -67,7 +67,7 @@ export default function DashboardPage() {
 
   function handleLogout() {
     setAccessToken(null);
-    router.push('/');
+    router.push('/login');
   }
 
   if (!accessToken) {

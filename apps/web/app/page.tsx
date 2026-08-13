@@ -1,80 +1,38 @@
-'use client';
+import styles from './page.module.css';
 
-import { useState, type FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from './auth-context';
-import { API_BASE_URL } from '../lib/api';
-
-export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const { setAccessToken } = useAuth();
-  const router = useRouter();
-
-  async function handleSubmit(event: FormEvent) {
-    event.preventDefault();
-    setError(null);
-    setLoading(true);
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.message ?? 'Login failed');
-        return;
-      }
-
-      setAccessToken(data.accessToken);
-      router.push('/dashboard');
-    } catch {
-      setError('Could not reach the server');
-    } finally {
-      setLoading(false);
-    }
-  }
-
+export default function LandingPage() {
   return (
-    <main className="p-6 max-w-sm mx-auto">
-      <h1 className="text-xl font-bold mb-4">Log in</h1>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-        <label htmlFor="email">
-          Email
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="block border rounded px-2 py-1 w-full mt-1"
-          />
-        </label>
-        <label htmlFor="password">
-          Password
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="block border rounded px-2 py-1 w-full mt-1"
-          />
-        </label>
-        <button
-          type="submit"
-          disabled={loading}
-          className="border rounded px-3 py-1 mt-2 disabled:opacity-50"
-        >
-          {loading ? 'Logging in...' : 'Log in'}
-        </button>
-      </form>
-      {error && <p className="text-red-600 mt-3">{error}</p>}
-    </main>
+    <div className={styles.viewport}>
+      <div className={styles.scene}>
+        <img src="/sprites/sky-layer.png" alt="" className={`${styles.layer} ${styles.sky}`} />
+        <img
+          src="/sprites/skyline-layer.png"
+          alt=""
+          className={`${styles.layer} ${styles.skyline}`}
+        />
+        <img
+          src="/sprites/treeline-layer.png"
+          alt=""
+          className={`${styles.layer} ${styles.treeline}`}
+        />
+        <img src="/sprites/tree-layer.png" alt="" className={`${styles.layer} ${styles.tree}`} />
+        <img
+          src="/sprites/table-character-layer.png"
+          alt=""
+          className={`${styles.layer} ${styles.table}`}
+        />
+        <img
+          src="/sprites/grass-layer.png"
+          alt=""
+          className={`${styles.layer} ${styles.grass}`}
+        />
+
+        <img src="/sprites/leaf-particle-1.png" alt="" className={`${styles.leaf} ${styles.leaf1}`} />
+        <img src="/sprites/leaf-particle-1.png" alt="" className={`${styles.leaf} ${styles.leaf2}`} />
+        <img src="/sprites/leaf-particle-1.png" alt="" className={`${styles.leaf} ${styles.leaf3}`} />
+        <img src="/sprites/leaf-particle-1.png" alt="" className={`${styles.leaf} ${styles.leaf4}`} />
+        <img src="/sprites/leaf-particle-1.png" alt="" className={`${styles.leaf} ${styles.leaf5}`} />
+      </div>
+    </div>
   );
 }

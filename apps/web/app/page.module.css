@@ -1,0 +1,192 @@
+.viewport {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #0a1a2f;
+}
+
+/* Fixed-aspect-ratio scene box, sized via the aspect-ratio + min-width/min-height
+   "cover" trick: it grows to satisfy both minimums (100% width, 100% height)
+   while preserving its ratio, so it always fully covers the viewport without
+   distorting any layer, on both wide and narrow windows. */
+.scene {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  aspect-ratio: 1024 / 544;
+  min-width: 100%;
+  min-height: 100%;
+}
+
+.layer {
+  position: absolute;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+}
+
+.sky {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.skyline {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.treeline {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform-origin: bottom center;
+  animation: sway-treeline 6s ease-in-out infinite;
+}
+
+.tree {
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: auto;
+  transform-origin: bottom center;
+  animation: sway-tree 4s ease-in-out infinite;
+}
+
+.table {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.grass {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform-origin: bottom center;
+  animation: sway-grass 3s ease-in-out infinite;
+}
+
+@keyframes sway-treeline {
+  0%,
+  100% {
+    transform: rotate(-0.5deg);
+  }
+  50% {
+    transform: rotate(0.5deg);
+  }
+}
+
+@keyframes sway-tree {
+  0%,
+  100% {
+    transform: rotate(-1deg);
+  }
+  50% {
+    transform: rotate(1deg);
+  }
+}
+
+@keyframes sway-grass {
+  0%,
+  100% {
+    transform: rotate(-1.5deg);
+  }
+  50% {
+    transform: rotate(1.5deg);
+  }
+}
+
+/* Leaf particles: start off-screen upper-left, drift diagonally down-and-right
+   across the whole viewport while rotating a full turn, then loop. Opacity
+   fades in/out right at the loop boundary so the reset back to 0% is invisible. */
+.leaf {
+  position: absolute;
+  width: 2.2%;
+  aspect-ratio: 1 / 1;
+  height: auto;
+  opacity: 0;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+@keyframes leaf-drift {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 0;
+  }
+  8% {
+    opacity: 0.8;
+  }
+  92% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(115vw, 95vh) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.leaf1 {
+  top: -8%;
+  left: -6%;
+  animation-name: leaf-drift;
+  animation-duration: 14s;
+  animation-delay: 0s;
+}
+
+.leaf2 {
+  top: -12%;
+  left: 3%;
+  animation-name: leaf-drift;
+  animation-duration: 18s;
+  animation-delay: 3s;
+}
+
+.leaf3 {
+  top: -6%;
+  left: -12%;
+  animation-name: leaf-drift;
+  animation-duration: 12s;
+  animation-delay: 6.5s;
+}
+
+.leaf4 {
+  top: -15%;
+  left: 9%;
+  animation-name: leaf-drift;
+  animation-duration: 20s;
+  animation-delay: 1.5s;
+}
+
+.leaf5 {
+  top: -9%;
+  left: -2%;
+  animation-name: leaf-drift;
+  animation-duration: 16s;
+  animation-delay: 9s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .treeline,
+  .tree,
+  .grass {
+    animation: none;
+  }
+
+  .leaf1,
+  .leaf2,
+  .leaf3,
+  .leaf4,
+  .leaf5 {
+    animation: none;
+    opacity: 0;
+  }
+}
