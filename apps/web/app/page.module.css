@@ -44,7 +44,6 @@
   inset: 0;
   width: 100%;
   height: 100%;
-  animation: drift-treeline 6s ease-in-out infinite;
 }
 
 .tree {
@@ -52,8 +51,6 @@
   bottom: 0;
   width: 100%;
   height: auto;
-  transform-origin: bottom center;
-  animation: sway-tree 4s ease-in-out infinite;
 }
 
 .table {
@@ -72,46 +69,11 @@
   width: 100%;
   height: 100%;
   clip-path: inset(85% 0 0 0);
-  animation: drift-grass 4s ease-in-out infinite;
 }
 
-/* Full-viewport-width strips: rotating them around one pivot amplifies into a
-   large lateral swing at the far edges (mechanical "shake"), so these sway via
-   a small horizontal drift instead. The single foreground tree is a compact,
-   narrow object, so rotation reads correctly there and is left as-is. */
-@keyframes drift-treeline {
-  0%,
-  100% {
-    transform: translateX(-2px);
-  }
-  50% {
-    transform: translateX(2px);
-  }
-}
-
-@keyframes drift-grass {
-  0%,
-  100% {
-    transform: translateX(-3px);
-  }
-  50% {
-    transform: translateX(3px);
-  }
-}
-
-@keyframes sway-tree {
-  0%,
-  100% {
-    transform: rotate(-1deg);
-  }
-  50% {
-    transform: rotate(1deg);
-  }
-}
-
-/* Leaf particles: start off-screen upper-left, drift diagonally down-and-right
-   across the whole viewport while rotating a full turn, then loop. Opacity
-   fades in/out right at the loop boundary so the reset back to 0% is invisible. */
+/* All motion (sway, drift, leaf particles) is driven by GSAP in page.tsx, not
+   CSS @keyframes/animation — this file only handles static layout/positioning.
+   The reduced-motion check also lives in JS, since GSAP simply never runs. */
 .leaf {
   position: absolute;
   width: 2.2%;
@@ -121,80 +83,4 @@
   image-rendering: -moz-crisp-edges;
   image-rendering: crisp-edges;
   image-rendering: pixelated;
-  animation-timing-function: ease-in-out;
-  animation-iteration-count: infinite;
-}
-
-@keyframes leaf-drift {
-  0% {
-    transform: translate(0, 0) rotate(0deg);
-    opacity: 0;
-  }
-  8% {
-    opacity: 0.8;
-  }
-  92% {
-    opacity: 0.8;
-  }
-  100% {
-    transform: translate(115vw, 95vh) rotate(360deg);
-    opacity: 0;
-  }
-}
-
-.leaf1 {
-  top: -8%;
-  left: -6%;
-  animation-name: leaf-drift;
-  animation-duration: 14s;
-  animation-delay: 0s;
-}
-
-.leaf2 {
-  top: -12%;
-  left: 3%;
-  animation-name: leaf-drift;
-  animation-duration: 18s;
-  animation-delay: 3s;
-}
-
-.leaf3 {
-  top: -6%;
-  left: -12%;
-  animation-name: leaf-drift;
-  animation-duration: 12s;
-  animation-delay: 6.5s;
-}
-
-.leaf4 {
-  top: -15%;
-  left: 9%;
-  animation-name: leaf-drift;
-  animation-duration: 20s;
-  animation-delay: 1.5s;
-}
-
-.leaf5 {
-  top: -9%;
-  left: -2%;
-  animation-name: leaf-drift;
-  animation-duration: 16s;
-  animation-delay: 9s;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .treeline,
-  .tree,
-  .grass {
-    animation: none;
-  }
-
-  .leaf1,
-  .leaf2,
-  .leaf3,
-  .leaf4,
-  .leaf5 {
-    animation: none;
-    opacity: 0;
-  }
 }
