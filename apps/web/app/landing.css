@@ -1,0 +1,60 @@
+/* Design tokens for the public landing page ONLY. Deliberately scoped under
+   .landing-root instead of :root/body, and this file is imported only by
+   app/page.tsx (not the root layout), so /login, /register, and /dashboard
+   never see these tokens or any risk of visual bleed from them. */
+@theme inline {
+  --color-border: var(--landing-border);
+  --color-input: var(--landing-input);
+  --color-ring: var(--landing-ring);
+  --color-destructive: var(--landing-destructive);
+  --color-success-foreground: var(--landing-success-foreground);
+  --color-success: var(--landing-success);
+  --color-accent-foreground: var(--landing-accent-foreground);
+  --color-accent: var(--landing-accent);
+  --color-muted-foreground: var(--landing-muted-foreground);
+  --color-muted: var(--landing-muted);
+  --color-secondary-foreground: var(--landing-secondary-foreground);
+  --color-secondary: var(--landing-secondary);
+  --color-primary-foreground: var(--landing-primary-foreground);
+  --color-primary: var(--landing-primary);
+  --color-card-foreground: var(--landing-card-foreground);
+  --color-card: var(--landing-card);
+  --color-foreground: var(--landing-foreground);
+  --color-background: var(--landing-background);
+  --font-display: var(--font-landing-display), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-landing-body), ui-sans-serif, system-ui, sans-serif;
+  --radius-md: calc(var(--landing-radius) * 0.8);
+  --radius-xl: calc(var(--landing-radius) * 1.4);
+  --radius-2xl: calc(var(--landing-radius) * 1.8);
+  --radius-3xl: calc(var(--landing-radius) * 2.2);
+}
+
+.landing-root {
+  color-scheme: light;
+  --landing-background: oklch(0.966 0.017 78);
+  --landing-foreground: oklch(0.29 0.035 52);
+  --landing-card: oklch(0.992 0.009 86);
+  --landing-card-foreground: oklch(0.29 0.035 52);
+  --landing-primary: oklch(0.745 0.152 66);
+  --landing-primary-foreground: oklch(0.28 0.045 50);
+  --landing-secondary: oklch(0.93 0.033 62);
+  --landing-secondary-foreground: oklch(0.34 0.04 52);
+  --landing-muted: oklch(0.938 0.018 76);
+  --landing-muted-foreground: oklch(0.53 0.03 56);
+  --landing-accent: oklch(0.645 0.17 33);
+  --landing-accent-foreground: oklch(0.985 0.012 80);
+  --landing-success: oklch(0.7 0.13 150);
+  --landing-success-foreground: oklch(0.985 0.012 80);
+  --landing-destructive: oklch(0.577 0.245 27.325);
+  --landing-border: oklch(0.885 0.022 70);
+  --landing-input: oklch(0.885 0.022 70);
+  --landing-ring: oklch(0.745 0.152 66);
+  --landing-radius: 0.875rem;
+
+  background: var(--landing-background);
+  color: var(--landing-foreground);
+}
+
+.landing-root * {
+  border-color: var(--landing-border);
+}
