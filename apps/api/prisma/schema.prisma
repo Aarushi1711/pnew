@@ -149,13 +149,23 @@ model Lesson {
   @@map("lessons")
 }
 
+enum ProblemDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
 model Problem {
-  id          String   @id @default(cuid())
-  slug        String   @unique
+  id          String             @id @default(cuid())
+  slug        String             @unique
   title       String
   description String
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  // Optional and only backfilled for newly-added problems -- pre-existing
+  // problems were never rated and guessing a difficulty for them is out of
+  // scope here, so this stays nullable rather than forcing a default.
+  difficulty  ProblemDifficulty?
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
 
   modules     ModuleProblem[]
   skills      ProblemSkill[]
