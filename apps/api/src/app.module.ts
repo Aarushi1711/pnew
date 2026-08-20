@@ -9,6 +9,7 @@ import { SubmissionsModule } from './submissions/submissions.module';
 import { ProgressionModule } from './progression/progression.module';
 import { MissionsModule } from './missions/missions.module';
 import { AiModule } from './ai/ai.module';
+import { ProblemsModule } from './problems/problems.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { AiModule } from './ai/ai.module';
     ProgressionModule,
     MissionsModule,
     AiModule,
+    ProblemsModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService],

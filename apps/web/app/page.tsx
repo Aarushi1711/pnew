@@ -1,25 +1,14 @@
 import type { Metadata } from 'next';
-import { Bricolage_Grotesque, Geist } from 'next/font/google';
-import './landing.css';
+import { bricolage, geist } from '@/lib/fonts';
 import { SiteNav } from '@/components/site-nav';
 import { HeroSection } from '@/components/hero-section';
 import { StatsBand } from '@/components/stats-band';
 import { FeaturesSection } from '@/components/features-section';
 import { CtaSection, SiteFooter } from '@/components/cta-footer';
 
-// Fonts are loaded here (not in the root layout) and scoped to this page's
-// own wrapper div, so /login, /register, and /dashboard keep their existing
-// default fonts untouched.
-const bricolage = Bricolage_Grotesque({
-  subsets: ['latin'],
-  variable: '--font-landing-display',
-  weight: ['500', '600', '700', '800'],
-});
-
-const geist = Geist({
-  subsets: ['latin'],
-  variable: '--font-landing-body',
-});
+// Fonts are loaded from lib/fonts (not the root layout) and scoped to this
+// page's own wrapper div, so /login, /register, and /dashboard keep their
+// existing default fonts untouched unless they opt in the same way.
 
 export const metadata: Metadata = {
   title: 'Traverse — Learn algorithms by doing',

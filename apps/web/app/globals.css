@@ -1,4 +1,12 @@
 @import "tailwindcss";
+/* landing.css's @theme inline block must be reachable from this file (the
+   actual Tailwind entry) for its utilities (bg-primary, bg-card, font-display,
+   etc.) to be generated at all -- @theme is only honored within the CSS
+   @import graph rooted here, not via a plain JS import in a page component.
+   Isolation from /dashboard and other routes is NOT provided by this import
+   (Tailwind utilities are inherently global); it comes from every token
+   value being scoped under .landing-root, which those routes never render. */
+@import "./landing.css";
 
 body {
   background: #ffffff;

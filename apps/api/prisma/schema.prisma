@@ -21,21 +21,46 @@ datasource db {
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
-  passwordHash String   @map("password_hash")
+  // Nullable: a user who signed up via "Sign in with Google" has no password
+  // of their own until/unless they ever set one.
+  passwordHash String?  @map("password_hash")
+  googleId     String?  @unique @map("google_id")
   totalXp      Int      @default(0) @map("total_xp")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  submissions        Submission[]
-  trackProgress      UserTrackProgress[]
-  stageProgress      UserStageProgress[]
-  moduleProgress     UserModuleProgress[]
-  checkpointAttempts UserCheckpointAttempt[]
-  skillMastery       UserSkillMastery[]
-  missionClaims      UserMissionClaim[]
-  hintUnlocks        UserHintUnlock[]
+  submissions         Submission[]
+  trackProgress       UserTrackProgress[]
+  stageProgress       UserStageProgress[]
+  moduleProgress      UserModuleProgress[]
+  checkpointAttempts  UserCheckpointAttempt[]
+  skillMastery        UserSkillMastery[]
+  missionClaims       UserMissionClaim[]
+  hintUnlocks         UserHintUnlock[]
+  passwordResetTokens PasswordResetToken[]
 
   @@map("users")
+}
+
+// ---------------------------------------------------------------------------
+// Password reset tokens (Identity domain).
+// The raw token is emailed to the user and never stored — only its SHA-256
+// hash, so a database read alone can't be used to reset someone's password.
+// @@unique on tokenHash gives O(1) lookup by the hash of the token in the
+// reset link, which a per-row bcrypt.compare loop couldn't do.
+// ---------------------------------------------------------------------------
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  tokenHash String   @unique @map("token_hash")
+  expiresAt DateTime @map("expires_at")
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_reset_tokens")
 }
 
 // ---------------------------------------------------------------------------

@@ -1,7 +1,12 @@
-/* Design tokens for the public landing page ONLY. Deliberately scoped under
-   .landing-root instead of :root/body, and this file is imported only by
-   app/page.tsx (not the root layout), so /login, /register, and /dashboard
-   never see these tokens or any risk of visual bleed from them. */
+/* Design tokens for the public landing page and the auth pages (login,
+   register) that share its visual style. Pulled into the Tailwind root via
+   an @import in globals.css so the @theme inline block below actually
+   generates utility classes (bg-primary, bg-card, font-display, etc.) --
+   Tailwind only picks up @theme within its own CSS @import graph, not a
+   plain JS import in a page component. Isolation from /dashboard and other
+   routes comes entirely from scoping every token's VALUE under .landing-root:
+   the generated utilities are global, but resolve to nothing wherever
+   .landing-root isn't present in the DOM, so there is no visual bleed. */
 @theme inline {
   --color-border: var(--landing-border);
   --color-input: var(--landing-input);
