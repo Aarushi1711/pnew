@@ -8,10 +8,19 @@ interface StageNodeProps {
   starsEarned: number;
   maxStars: number;
   expanded: boolean;
+  requirementText: string | null;
   onClick: () => void;
 }
 
-export function StageNode({ index, locked, starsEarned, maxStars, expanded, onClick }: StageNodeProps) {
+export function StageNode({
+  index,
+  locked,
+  starsEarned,
+  maxStars,
+  expanded,
+  requirementText,
+  onClick,
+}: StageNodeProps) {
   return (
     <button
       type="button"
@@ -19,7 +28,7 @@ export function StageNode({ index, locked, starsEarned, maxStars, expanded, onCl
       disabled={locked}
       aria-expanded={locked ? undefined : expanded}
       className={cn(
-        'flex min-w-[128px] flex-col items-center gap-2 rounded-2xl border px-5 py-4 text-center transition-colors',
+        'flex min-w-[128px] max-w-[160px] flex-col items-center gap-2 rounded-2xl border px-5 py-4 text-center transition-colors',
         locked && 'cursor-not-allowed border-border bg-muted opacity-60',
         !locked && expanded && 'cursor-pointer border-primary bg-primary/10',
         !locked && !expanded && 'cursor-pointer border-border bg-card hover:border-primary/60',
@@ -39,6 +48,9 @@ export function StageNode({ index, locked, starsEarned, maxStars, expanded, onCl
           <StarIcon filled size={12} />
           {starsEarned}/{maxStars}
         </span>
+      )}
+      {locked && requirementText && (
+        <span className="text-[11px] leading-tight text-muted-foreground">{requirementText}</span>
       )}
     </button>
   );

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { CurriculumIntegrityService } from './curriculum-integrity.service';
 import { JourneyController } from './journey.controller';
 import { JourneyService } from './journey.service';
 import { LevelsController } from './levels.controller';
@@ -9,7 +10,13 @@ import { UnlockService } from './unlock.service';
 
 @Module({
   controllers: [JourneyController, ProgressController, LevelsController],
-  providers: [JourneyService, ProgressService, UnlockService, LevelsService],
+  providers: [
+    JourneyService,
+    ProgressService,
+    UnlockService,
+    LevelsService,
+    CurriculumIntegrityService,
+  ],
   exports: [UnlockService],
 })
 export class ProgressionModule {}

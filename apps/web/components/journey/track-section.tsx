@@ -1,4 +1,4 @@
-import type { TrackNode } from '@/lib/journey-types';
+import type { StageNode as StageNodeData, TrackNode } from '@/lib/journey-types';
 import { LevelNode } from './level-node';
 import { StageNode } from './stage-node';
 
@@ -13,6 +13,26 @@ interface TrackSectionProps {
   pendingModuleId: string | null;
 }
 
+// Builds "Requires: Mission N (X+ stars), ..." straight from the stage's
+// real unlockRule.requiresStages -- never hardcoded, so a threshold or
+// dependency change in the data shows up here with no code change.
+// stagePositionById is scoped to this track's own stages, matching how
+// requirements are actually authored (sibling stages within one track).
+function formatRequirement(stage: StageNodeData, stagePositionById: Map<string, number>): string | null {
+  const rule = stage.unlockRule;
+  if (!rule || !('requiresStages' in rule) || rule.requiresStages.length === 0) {
+    return null;
+  }
+
+  const parts = rule.requiresStages.map((requirement) => {
+    const position = stagePositionById.get(requirement.stageId);
+    const label = position ? `Mission ${position}` : 'an earlier mission';
+    return `${label} (${requirement.minStars}+ stars)`;
+  });
+
+  return `Requires: ${parts.join(', ')}`;
+}
+
 export function TrackSection({
   track,
   trackIndex,
@@ -22,6 +42,7 @@ export function TrackSection({
   pendingModuleId,
 }: TrackSectionProps) {
   const expandedStage = track.stages.find((stage) => stage.id === expandedStageId);
+  const stagePositionById = new Map(track.stages.map((stage, i) => [stage.id, i + 1]));
 
   return (
     <section className="mb-10">
@@ -41,6 +62,7 @@ export function TrackSection({
               starsEarned={stage.modules.reduce((sum, m) => sum + m.starsEarned, 0)}
               maxStars={stage.modules.length * MAX_STARS_PER_MODULE}
               expanded={stage.id === expandedStageId}
+              requirementText={stage.locked ? formatRequirement(stage, stagePositionById) : null}
               onClick={() => onToggleStage(stage.id)}
             />
           </div>
