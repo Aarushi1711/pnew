@@ -32,12 +32,23 @@ export interface StageNode {
   modules: ModuleNode[];
 }
 
+export interface TrackUnlockRequirement {
+  trackId: string;
+  minPercent: number;
+}
+
+// Mirrors StageUnlockRule's shape one level up -- see apps/api's
+// TrackUnlockRule / UnlockService.isTrackUnlocked for the source of truth.
+export type TrackUnlockRule = { requiresTracks: TrackUnlockRequirement[] } | null;
+
 export interface TrackNode {
   id: string;
   slug: string;
   title: string;
   orderIndex: number;
   description: string | null;
+  unlockRule: TrackUnlockRule;
+  locked: boolean;
   status: string;
   stages: StageNode[];
 }

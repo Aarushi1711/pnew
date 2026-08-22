@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Problem } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { StageUnlockRule } from './unlock-rule.types';
+import { StageUnlockRule, TrackUnlockRule } from './unlock-rule.types';
 
 const MAX_STARS_PER_MODULE = 3;
 const ACCEPTED_VERDICT = 'Accepted';
@@ -22,7 +22,11 @@ export class UnlockService {
 
     const problemIds = moduleProblems.map((mp) => mp.problemId);
     const solved = await this.prisma.submission.findMany({
-      where: { userId, problemId: { in: problemIds }, verdict: ACCEPTED_VERDICT },
+      where: {
+        userId,
+        problemId: { in: problemIds },
+        verdict: ACCEPTED_VERDICT,
+      },
       select: { problemId: true },
       distinct: ['problemId'],
     });
@@ -35,7 +39,10 @@ export class UnlockService {
    * position in the module. Unlike getModuleStars this is NOT capped at 3 —
    * a module can have unsolved bonus problems even after hitting the star cap.
    */
-  async getUnsolvedProblems(userId: string, moduleId: string): Promise<Problem[]> {
+  async getUnsolvedProblems(
+    userId: string,
+    moduleId: string,
+  ): Promise<Problem[]> {
     const moduleProblems = await this.prisma.moduleProblem.findMany({
       where: { moduleId },
       orderBy: { orderIndex: 'asc' },
@@ -47,13 +54,19 @@ export class UnlockService {
 
     const problemIds = moduleProblems.map((mp) => mp.problemId);
     const solved = await this.prisma.submission.findMany({
-      where: { userId, problemId: { in: problemIds }, verdict: ACCEPTED_VERDICT },
+      where: {
+        userId,
+        problemId: { in: problemIds },
+        verdict: ACCEPTED_VERDICT,
+      },
       select: { problemId: true },
       distinct: ['problemId'],
     });
     const solvedIds = new Set(solved.map((s) => s.problemId));
 
-    return moduleProblems.filter((mp) => !solvedIds.has(mp.problemId)).map((mp) => mp.problem);
+    return moduleProblems
+      .filter((mp) => !solvedIds.has(mp.problemId))
+      .map((mp) => mp.problem);
   }
 
   /** A stage's stars = sum of its modules' stars. */
@@ -90,6 +103,63 @@ export class UnlockService {
     for (const requirement of rule.requiresStages) {
       const stars = await this.getStageStars(userId, requirement.stageId);
       if (stars < requirement.minStars) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /** A track's stars = sum of its stages' stars. */
+  async getTrackStars(userId: string, trackId: string): Promise<number> {
+    const stages = await this.prisma.stage.findMany({
+      where: { trackId },
+      select: { id: true },
+    });
+
+    const starsPerStage = await Promise.all(
+      stages.map((stage) => this.getStageStars(userId, stage.id)),
+    );
+
+    return starsPerStage.reduce((sum, stars) => sum + stars, 0);
+  }
+
+  /** Theoretical max for a track = sum of its stages' max stars, computed live (never cached/hardcoded). */
+  async getTrackMaxStars(trackId: string): Promise<number> {
+    const stages = await this.prisma.stage.findMany({
+      where: { trackId },
+      select: { id: true },
+    });
+
+    const maxPerStage = await Promise.all(
+      stages.map((stage) => this.getStageMaxStars(stage.id)),
+    );
+    return maxPerStage.reduce((sum, max) => sum + max, 0);
+  }
+
+  /**
+   * null unlockRule = always unlocked. Otherwise ALL requiresTracks entries
+   * must be satisfied: (real stars / real max stars) * 100 >= minPercent.
+   * A dependency track with zero possible stars (no content yet) is treated
+   * as vacuously 100% complete, so it can never block on divide-by-zero.
+   */
+  async isTrackUnlocked(userId: string, unlockRule: unknown): Promise<boolean> {
+    if (!unlockRule) {
+      return true;
+    }
+
+    const rule = unlockRule as TrackUnlockRule;
+    if (!rule.requiresTracks || rule.requiresTracks.length === 0) {
+      return true;
+    }
+
+    for (const requirement of rule.requiresTracks) {
+      const [stars, maxStars] = await Promise.all([
+        this.getTrackStars(userId, requirement.trackId),
+        this.getTrackMaxStars(requirement.trackId),
+      ]);
+      const percent = maxStars === 0 ? 100 : (stars / maxStars) * 100;
+      if (percent < requirement.minPercent) {
         return false;
       }
     }

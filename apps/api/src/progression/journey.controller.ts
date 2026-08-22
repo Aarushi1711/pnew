@@ -1,5 +1,8 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
-import { CurrentUser, type CurrentUserPayload } from '../auth/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  type CurrentUserPayload,
+} from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { JourneyService } from './journey.service';
 

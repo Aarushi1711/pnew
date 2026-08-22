@@ -89,6 +89,10 @@ model Track {
   title       String
   orderIndex  Int      @map("order_index")
   description String?
+  // Same philosophy as Stage.unlockRule: { requiresTracks: [{ trackId, minPercent }] }.
+  // minPercent is against that track's real total stars (live-computed), not a raw
+  // star count -- tracks vary widely in total content size. null = always unlocked.
+  unlockRule  Json?    @map("unlock_rule")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 

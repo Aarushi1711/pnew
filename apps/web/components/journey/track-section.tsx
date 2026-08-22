@@ -1,5 +1,6 @@
 import type { StageNode as StageNodeData, TrackNode } from '@/lib/journey-types';
 import { LevelNode } from './level-node';
+import { LockIcon } from './lock-icon';
 import { StageNode } from './stage-node';
 
 const MAX_STARS_PER_MODULE = 3;
@@ -7,10 +8,31 @@ const MAX_STARS_PER_MODULE = 3;
 interface TrackSectionProps {
   track: TrackNode;
   trackIndex: number;
+  // Spans ALL tracks (not just this one), since a track's unlockRule can
+  // reference any other track -- built once at the page level.
+  trackPositionById: Map<string, number>;
   expandedStageId: string | null;
   onToggleStage: (stageId: string) => void;
   onLevelClick: (moduleId: string) => void;
   pendingModuleId: string | null;
+}
+
+// Builds "Requires: World N (X%+ complete), ..." straight from the track's
+// real unlockRule.requiresTracks -- never hardcoded, mirroring
+// formatRequirement below at the track level.
+function formatTrackRequirement(track: TrackNode, trackPositionById: Map<string, number>): string | null {
+  const rule = track.unlockRule;
+  if (!rule || !rule.requiresTracks || rule.requiresTracks.length === 0) {
+    return null;
+  }
+
+  const parts = rule.requiresTracks.map((requirement) => {
+    const position = trackPositionById.get(requirement.trackId);
+    const label = position ? `World ${position}` : 'an earlier world';
+    return `${label} (${requirement.minPercent}%+ complete)`;
+  });
+
+  return `Requires: ${parts.join(', ')}`;
 }
 
 // Builds "Requires: Mission N (X+ stars), ..." straight from the stage's
@@ -36,6 +58,7 @@ function formatRequirement(stage: StageNodeData, stagePositionById: Map<string, 
 export function TrackSection({
   track,
   trackIndex,
+  trackPositionById,
   expandedStageId,
   onToggleStage,
   onLevelClick,
@@ -43,6 +66,30 @@ export function TrackSection({
 }: TrackSectionProps) {
   const expandedStage = track.stages.find((stage) => stage.id === expandedStageId);
   const stagePositionById = new Map(track.stages.map((stage, i) => [stage.id, i + 1]));
+
+  // Tracks are never concealed (unlike Stages) -- the real title always
+  // shows, locked or not. A locked track just shows why, and doesn't reveal
+  // its stage row, mirroring how a locked Stage doesn't reveal its Levels.
+  if (track.locked) {
+    const requirementText = formatTrackRequirement(track, trackPositionById);
+    return (
+      <section className="mb-10">
+        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          World {trackIndex}
+        </span>
+        <h2 className="mt-1 font-display text-2xl font-bold text-foreground">{track.title}</h2>
+        <div className="mt-6 flex items-center gap-4 rounded-2xl border border-border bg-muted px-6 py-5 opacity-70">
+          <div className="grid size-10 flex-shrink-0 place-items-center rounded-full bg-muted-foreground/15 text-muted-foreground">
+            <LockIcon size={18} />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-foreground">Locked</p>
+            {requirementText && <p className="mt-0.5 text-xs text-muted-foreground">{requirementText}</p>}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="mb-10">

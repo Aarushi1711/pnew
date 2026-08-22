@@ -7,7 +7,9 @@ export class ProgressService {
   constructor(private readonly prisma: PrismaService) {}
 
   async completeModule(userId: string, moduleId: string) {
-    const stageModule = await this.prisma.module.findUnique({ where: { id: moduleId } });
+    const stageModule = await this.prisma.module.findUnique({
+      where: { id: moduleId },
+    });
     if (!stageModule) {
       throw new NotFoundException('Module not found');
     }

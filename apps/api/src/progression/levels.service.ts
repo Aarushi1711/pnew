@@ -12,7 +12,9 @@ export class LevelsService {
   ) {}
 
   async choose(userId: string, moduleId: string, dto: LevelChoiceDto) {
-    const stageModule = await this.prisma.module.findUnique({ where: { id: moduleId } });
+    const stageModule = await this.prisma.module.findUnique({
+      where: { id: moduleId },
+    });
     if (!stageModule) {
       throw new NotFoundException('Module not found');
     }
@@ -25,7 +27,10 @@ export class LevelsService {
   }
 
   private async practiceMore(userId: string, moduleId: string) {
-    const unsolved = await this.unlockService.getUnsolvedProblems(userId, moduleId);
+    const unsolved = await this.unlockService.getUnsolvedProblems(
+      userId,
+      moduleId,
+    );
     if (unsolved.length === 0) {
       return {
         available: false,
@@ -33,20 +38,34 @@ export class LevelsService {
       };
     }
 
-    return { available: true, moduleId, problem: this.toProblemDto(unsolved[0]) };
+    return {
+      available: true,
+      moduleId,
+      problem: this.toProblemDto(unsolved[0]),
+    };
   }
 
-  private async moveUp(userId: string, stageId: string, currentOrderIndex: number) {
+  private async moveUp(
+    userId: string,
+    stageId: string,
+    currentOrderIndex: number,
+  ) {
     const nextModule = await this.prisma.module.findFirst({
       where: { stageId, orderIndex: { gt: currentOrderIndex } },
       orderBy: { orderIndex: 'asc' },
     });
 
     if (!nextModule) {
-      return { available: false, message: 'This is the last level in the stage.' };
+      return {
+        available: false,
+        message: 'This is the last level in the stage.',
+      };
     }
 
-    const unsolved = await this.unlockService.getUnsolvedProblems(userId, nextModule.id);
+    const unsolved = await this.unlockService.getUnsolvedProblems(
+      userId,
+      nextModule.id,
+    );
     if (unsolved.length === 0) {
       return {
         available: false,
@@ -54,7 +73,11 @@ export class LevelsService {
       };
     }
 
-    return { available: true, moduleId: nextModule.id, problem: this.toProblemDto(unsolved[0]) };
+    return {
+      available: true,
+      moduleId: nextModule.id,
+      problem: this.toProblemDto(unsolved[0]),
+    };
   }
 
   private toProblemDto(problem: Problem) {

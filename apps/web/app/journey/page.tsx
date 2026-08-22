@@ -87,6 +87,8 @@ export default function JourneyPage() {
     return null;
   }
 
+  const trackPositionById = new Map((data?.tracks ?? []).map((track, i) => [track.id, i + 1]));
+
   return (
     <div className={`landing-root ${bricolage.variable} ${geist.variable} font-sans`}>
       <main className="min-h-screen bg-background px-5 py-12 font-sans text-foreground">
@@ -117,6 +119,7 @@ export default function JourneyPage() {
                   key={track.id}
                   track={track}
                   trackIndex={i + 1}
+                  trackPositionById={trackPositionById}
                   expandedStageId={expandedStageId}
                   onToggleStage={toggleStage}
                   onLevelClick={handleLevelClick}

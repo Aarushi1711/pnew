@@ -6,3 +6,12 @@ export interface StageUnlockRequirement {
 export interface StageUnlockRule {
   requiresStages: StageUnlockRequirement[];
 }
+
+export interface TrackUnlockRequirement {
+  trackId: string;
+  minPercent: number;
+}
+
+export interface TrackUnlockRule {
+  requiresTracks: TrackUnlockRequirement[];
+}

@@ -1,14 +1,14 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { StageUnlockRule } from './unlock-rule.types';
+import { StageUnlockRule, TrackUnlockRule } from './unlock-rule.types';
 
 /**
  * Startup-only sanity check (warns, never blocks) for a specific class of
- * curriculum authoring mistake: a Stage displayed (via orderIndex) before a
- * Stage it actually depends on via unlockRule.requiresStages. This is
+ * curriculum authoring mistake: a Stage/Track displayed (via orderIndex)
+ * before a Stage/Track it actually depends on via unlockRule. This is
  * distinct from the cosmetic "does the order look sensible" question --
- * it's a real logical inconsistency (a locked stage's prerequisite would
- * appear later on the map than the stage itself).
+ * it's a real logical inconsistency (a locked node's prerequisite would
+ * appear later on the map than the node itself).
  */
 @Injectable()
 export class CurriculumIntegrityService implements OnApplicationBootstrap {
@@ -17,10 +17,22 @@ export class CurriculumIntegrityService implements OnApplicationBootstrap {
   constructor(private readonly prisma: PrismaService) {}
 
   async onApplicationBootstrap() {
-    await this.checkStageOrdering();
+    const stageIssues = await this.checkStageOrdering();
+    const trackIssues = await this.checkTrackOrdering();
+    const totalIssues = stageIssues + trackIssues;
+
+    if (totalIssues === 0) {
+      this.logger.log(
+        'Curriculum integrity check: all Stage and Track orderIndex values are consistent with unlockRule dependencies.',
+      );
+    } else {
+      this.logger.warn(
+        `Curriculum integrity check found ${totalIssues} ordering issue(s) -- see warnings above.`,
+      );
+    }
   }
 
-  async checkStageOrdering(): Promise<void> {
+  async checkStageOrdering(): Promise<number> {
     const stages = await this.prisma.stage.findMany({
       select: {
         id: true,
@@ -64,14 +76,42 @@ export class CurriculumIntegrityService implements OnApplicationBootstrap {
       }
     }
 
-    if (issues === 0) {
-      this.logger.log(
-        'Curriculum integrity check: all stage orderIndex values are consistent with unlockRule dependencies.',
-      );
-    } else {
-      this.logger.warn(
-        `Curriculum integrity check found ${issues} ordering issue(s) -- see warnings above.`,
-      );
+    return issues;
+  }
+
+  async checkTrackOrdering(): Promise<number> {
+    const tracks = await this.prisma.track.findMany({
+      select: { id: true, orderIndex: true, title: true, unlockRule: true },
+    });
+    const trackById = new Map(tracks.map((t) => [t.id, t]));
+
+    let issues = 0;
+    for (const track of tracks) {
+      const rule = track.unlockRule as unknown as TrackUnlockRule | null;
+      if (!rule?.requiresTracks?.length) {
+        continue;
+      }
+
+      for (const requirement of rule.requiresTracks) {
+        const dependency = trackById.get(requirement.trackId);
+        if (!dependency) {
+          this.logger.warn(
+            `Track "${track.title}" (${track.id}) has an unlockRule referencing unknown trackId ${requirement.trackId}.`,
+          );
+          issues++;
+          continue;
+        }
+        if (dependency.orderIndex >= track.orderIndex) {
+          this.logger.warn(
+            `Track "${track.title}" (orderIndex ${track.orderIndex}) depends on "${dependency.title}" ` +
+              `(orderIndex ${dependency.orderIndex}) via unlockRule, but does not display after it. ` +
+              `A locked track's prerequisite should have a lower orderIndex.`,
+          );
+          issues++;
+        }
+      }
     }
+
+    return issues;
   }
 }
